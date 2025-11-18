@@ -14,6 +14,9 @@ export async function getStaticPaths() {
 
 const { item } = Astro.props as { item: Illustrator };
 
+// 判斷圖片是否為直向（高度 >= 寬度）
+const isPortrait = item.data.avatar.height >= item.data.avatar.width;
+
 // ✅ 圖片點擊要連去的網址：從 md 裡的 imageLink 來
 const linkTarget = item.data.imageLink ?? null;
 
@@ -30,7 +33,7 @@ const { Content } = await item.render();
     <main>
       <a class="back-link" href="../">← 回到作品瀏覽</a>
 
-      <section class="detail">
+      <section class={`detail ${isPortrait ? "detail--portrait" : "detail--landscape"}`}>
         <!-- 左：大圖（可以點） -->
         <div class="image-wrapper">
           {linkTarget ? (
@@ -72,6 +75,9 @@ const { Content } = await item.render();
               {item.data.links.pixiv && (
                 <a class="pixiv-btn" href={item.data.links.pixiv} target="_blank">Pixiv</a>
               )}
+              {item.data.links.skeb && (
+                <a class="pixiv-btn" href={item.data.links.skeb} target="_blank">Skeb</a>
+              )}
               {item.data.links.website && (
                 <a class="pixiv-btn" href={item.data.links.website} target="_blank">Website</a>
               )}
@@ -108,10 +114,9 @@ const { Content } = await item.render();
         display: inline-block;
       }
 
-      /* 詳細頁卡片 */
+      /* 詳細頁卡片：共同樣式 */
       .detail {
         display: grid;
-        grid-template-columns: 2fr 1.3fr;
         gap: 2rem;
         margin-top: 1.5rem;
         background: #fff;
@@ -119,6 +124,24 @@ const { Content } = await item.render();
         padding: 2rem;
         box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
       }
+      
+      /* 直圖：維持左右兩欄（左圖右文字） */
+      .detail--portrait {
+        grid-template-columns: 2fr 1.3fr;
+      }
+      
+      /* 橫圖：改成一欄，圖片在上、文字在下 */
+      .detail--landscape {
+        grid-template-columns: 1fr;
+      }
+      
+      /* 手機版一律一欄 */
+      @media (max-width: 900px) {
+        .detail {
+          grid-template-columns: 1fr;
+        }
+      }
+
 
       @media (max-width: 900px) {
         .detail {
@@ -136,18 +159,18 @@ const { Content } = await item.render();
       .image-wrapper picture {
         display: block;
         width: 100%;
-        aspect-ratio: 3/4;
         overflow: hidden;
         border-radius: 1rem;
         background: #eee;
       }
-
+      
       .image-wrapper picture img {
         width: 100%;
-        height: 100%;
-        object-fit: cover;
+        height: auto;   /* 維持原本比例縮放 */
         display: block;
       }
+
+
 
       /* 標題 */
       .meta .title {

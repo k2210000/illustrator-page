@@ -2,6 +2,8 @@
 name: "Yioro"
 status: "wishlist"
 avatar: "./Yioro.png"
+priority: "S"
+order: 9930
 tags: ["可愛"]
 links:
   twitter: "https://x.com/yioro3252"

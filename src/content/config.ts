@@ -13,9 +13,14 @@ const illustrators = defineCollection({
                     twitter: z.string().url().optional(),
                     pixiv: z.string().url().optional(),
                     website: z.string().url().optional(),
+                    skeb: z.string().url().optional(),
                 })
                 .optional(),
-            imageLink: z.string().url().optional()
+            imageLink: z.string().url().optional(),
+
+            priority: z.enum(["S", "A", "B", "C"]).optional(),
+            order: z.number().optional(),
+
         }),
 });
 

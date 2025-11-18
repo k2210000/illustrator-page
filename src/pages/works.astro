@@ -1,18 +1,39 @@
 ---
 import { getCollection } from "astro:content";
-import { Image } from "astro:assets";
 
-const illustrators = await getCollection("illustrators");
+// ★ 定義優先度權重
+const priorityRank = { S: 0, A: 1, B: 2, C: 3 };
+
+// ★ 取得全部 illustrators，並排序後存在 illustrators 變數裡
+const illustratorsRaw = await getCollection("illustrators");
+
+const illustrators = illustratorsRaw
+  .slice()
+  .sort((a, b) => {
+    // ① 先比 priority（S → A → B → C）
+    const pa = priorityRank[a.data.priority ?? "C"];
+    const pb = priorityRank[b.data.priority ?? "C"];
+    if (pa !== pb) return pa - pb;
+
+    // ② 再比 order（越小越前）
+    const oa = a.data.order ?? 9999;
+    const ob = b.data.order ?? 9999;
+    if (oa !== ob) return oa - ob;
+
+    // ③ 最後用 name 排序，避免順序亂跳
+    return a.data.name.localeCompare(b.data.name, "zh-Hant");
+  });
 ---
 
 <html lang="zh-Hant">
   <head>
+  　<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet">
     <meta charset="utf-8" />
-    <title>My Works</title>
+    <title>繪師收藏</title>
   </head>
   <body>
     <main>
-      <h1>繪師收藏</h1>
+      <h1>Phantom錢都跑去哪的委託情報</h1>
       <p>這裡會顯示我委託過與想委託的繪師。</p>
 
       <section class="gallery">
@@ -40,12 +61,18 @@ const illustrators = await getCollection("illustrators");
     </main>
 
     <style>
+      body {
+        background: #f6f7f9;
+      }
       main {
         max-width: 1200px;
         margin: 0 auto;
         padding: 2rem 1rem 4rem;
         font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
           "Noto Sans TC", sans-serif;
+        h1 {
+          font-family: "Noto Sans JP", sans-serif;
+        }
       }
       
       /* --- Masonry layout --- */
@@ -82,15 +109,16 @@ const illustrators = await getCollection("illustrators");
       .card picture {
         display: block;
         width: 100%;
-        aspect-ratio: 3 / 4;
-        overflow: hidden;
+        /* 不再強制 3:4，也不裁切 */
       }
       
       .card picture img {
         width: 100%;
-        height: 100%;
-        object-fit: cover;
+        height: auto;      /* 讓圖片自己維持比例 */
+        display: block;
+        /* 不需要 object-fit，保持原比例就好 */
       }
+
       
       .card:hover picture img {
         transform: scale(1.05);
