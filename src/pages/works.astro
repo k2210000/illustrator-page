@@ -74,6 +74,16 @@ const commissioned = illustratorsRaw
             margin: 3rem 0 0.75rem;
             font-size: 1.5rem;
             font-weight: 700;
+            display: flex;
+            align-items: baseline;
+            gap: 0.4rem;
+            flex-wrap: wrap;
+        }
+
+        .section-count {
+            font-size: 0.9rem;
+            color: #6b7280;
+            font-weight: 400;
         }
 
         /* 🔍 搜尋欄：右上角、大顆膠囊 + 藍色重點 */
@@ -97,13 +107,14 @@ const commissioned = illustratorsRaw
             align-items: center;
             border-radius: 999px;
             background: #ffffff;
-            padding: 0.25rem 0.3rem 0.25rem 0.9rem;
+            padding: 0.25rem 0.35rem 0.25rem 0.9rem;
+            gap: 0.3rem;
         }
 
         .search-icon {
             font-size: 1rem;
             opacity: 0.7;
-            margin-right: 0.45rem;
+            margin-right: 0.1rem;
         }
 
         .search-box input {
@@ -120,6 +131,23 @@ const commissioned = illustratorsRaw
             color: #9ca3af;
         }
 
+        .search-clear {
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            font-size: 0.85rem;
+            padding: 0.2rem 0.35rem;
+            border-radius: 999px;
+            opacity: 0.4;
+            transition: background 0.15s ease, opacity 0.15s ease, transform 0.08s ease;
+        }
+
+        .search-clear:hover {
+            background: #f3f4f6;
+            opacity: 0.9;
+            transform: translateY(-0.5px);
+        }
+
         .search-badge {
             font-size: 0.75rem;
             padding: 0.2rem 0.6rem;
@@ -127,7 +155,6 @@ const commissioned = illustratorsRaw
             background: #eff6ff;
             color: #1d4ed8;
             border: 1px solid rgba(129, 140, 248, 0.55);
-            margin-left: 0.4rem;
             white-space: nowrap;
         }
 
@@ -256,7 +283,7 @@ const commissioned = illustratorsRaw
         }
     </style>
 
-    <!-- JS 折疊 + localStorage + 多欄位搜尋(name+slug+tags) + 空結果提示 + ARIA -->
+    <!-- JS 折疊 + localStorage + 多欄位搜尋 + 計數 + 空結果提示 + ARIA + 快捷鍵 -->
     <script is:inline>
         function toggleSection(sectionId, btnId, storageKey, labelShow, labelHide) {
             const section = document.getElementById(sectionId);
@@ -303,12 +330,19 @@ const commissioned = illustratorsRaw
 
             // 🔍 多欄位搜尋功能（name + slug + tags）
             const searchInput = document.getElementById("search-input");
+            const clearBtn = document.getElementById("search-clear");
             const cards = Array.from(document.querySelectorAll(".card"));
 
             const wishlistSection = document.getElementById("wishlist-section");
             const commissionedSection = document.getElementById("commissioned-section");
             const emptyWishlist = document.querySelector('[data-empty="wishlist"]');
             const emptyCommissioned = document.querySelector('[data-empty="commissioned"]');
+
+            // 🔢 計數元素
+            const countWishlist = document.querySelector('[data-count="wishlist"]');
+            const countCommissioned = document.querySelector('[data-count="commissioned"]');
+            const totalWishlist = Number(countWishlist?.dataset.total || "0");
+            const totalCommissioned = Number(countCommissioned?.dataset.total || "0");
 
             function updateEmptyHint(sectionEl, emptyEl, keyword) {
                 if (!sectionEl || !emptyEl) return;
@@ -321,6 +355,12 @@ const commissioned = illustratorsRaw
                 }
             }
 
+            function countVisible(sectionEl) {
+                if (!sectionEl) return 0;
+                const sectionCards = Array.from(sectionEl.querySelectorAll(".card"));
+                return sectionCards.filter((card) => card.style.display !== "none").length;
+            }
+
             function applySearch() {
                 const keyword = (searchInput.value || "").trim().toLowerCase();
 
@@ -330,13 +370,55 @@ const commissioned = illustratorsRaw
                     card.style.display = show ? "" : "none";
                 });
 
+                // 更新每個區塊的「空結果」提示
                 updateEmptyHint(wishlistSection, emptyWishlist, keyword);
                 updateEmptyHint(commissionedSection, emptyCommissioned, keyword);
+
+                // 🔢 更新每個區塊的顯示數量
+                if (countWishlist) {
+                    const visible = countVisible(wishlistSection);
+                    if (!keyword || visible === totalWishlist) {
+                        countWishlist.textContent = `（${totalWishlist}）`;
+                    } else {
+                        countWishlist.textContent = `（${visible} / ${totalWishlist}）`;
+                    }
+                }
+
+                if (countCommissioned) {
+                    const visible = countVisible(commissionedSection);
+                    if (!keyword || visible === totalCommissioned) {
+                        countCommissioned.textContent = `（${totalCommissioned}）`;
+                    } else {
+                        countCommissioned.textContent = `（${visible} / ${totalCommissioned}）`;
+                    }
+                }
             }
 
             if (searchInput) {
                 searchInput.addEventListener("input", applySearch);
-                applySearch(); // 初始化一次，確保提示狀態正確
+
+                // ❌ 清除按鈕
+                if (clearBtn) {
+                    clearBtn.addEventListener("click", () => {
+                        searchInput.value = "";
+                        searchInput.focus();
+                        applySearch();
+                    });
+                }
+
+                // 鍵盤快捷鍵：按 / 聚焦搜尋（輸入框沒在打字時）
+                document.addEventListener("keydown", (event) => {
+                    if (
+                        event.key === "/" &&
+                        document.activeElement !== searchInput &&
+                        !(document.activeElement && (document.activeElement.tagName === "INPUT" || document.activeElement.tagName === "TEXTAREA"))
+                    ) {
+                        event.preventDefault();
+                        searchInput.focus();
+                    }
+                });
+
+                applySearch(); // 初始化一次，確保提示與計數正確
             }
         });
     </script>
@@ -365,6 +447,14 @@ const commissioned = illustratorsRaw
                             autocomplete="off"
                             aria-label="搜尋繪師名稱、slug 或標籤"
                     />
+                    <button
+                            id="search-clear"
+                            class="search-clear"
+                            type="button"
+                            aria-label="清除搜尋"
+                    >
+                        ✕
+                    </button>
                     <span class="search-badge">全欄位搜尋</span>
                 </div>
             </div>
@@ -372,7 +462,16 @@ const commissioned = illustratorsRaw
     </div>
 
     <!-- 🔵 S：想要委託 -->
-    <h2 class="section-title">想要委託的繪師</h2>
+    <h2 class="section-title">
+        想要委託的繪師
+        <span
+                class="section-count"
+                data-count="wishlist"
+                data-total={wishlist.length}
+        >
+        （{wishlist.length}）
+      </span>
+    </h2>
 
     <button
             id="wishlist-btn"
@@ -419,7 +518,16 @@ const commissioned = illustratorsRaw
     </div>
 
     <!-- 🟩 A：已經委託 -->
-    <h2 class="section-title">已經委託過的繪師</h2>
+    <h2 class="section-title">
+        已經委託過的繪師
+        <span
+                class="section-count"
+                data-count="commissioned"
+                data-total={commissioned.length}
+        >
+        （{commissioned.length}）
+      </span>
+    </h2>
 
     <button
             id="commissioned-btn"
