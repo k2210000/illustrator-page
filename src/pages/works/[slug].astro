@@ -7,7 +7,7 @@ export async function getStaticPaths() {
   const illustrators = await getCollection("illustrators");
 
   return illustrators.map((item) => ({
-    params: { slug: item.slug },
+    params: { slug: item.slug }, // 用 Astro 自帶的 slug
     props: { item },
   }));
 }

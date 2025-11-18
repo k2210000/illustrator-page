@@ -4,23 +4,21 @@ const illustrators = defineCollection({
     type: "content",
     schema: ({ image }) =>
         z.object({
-            name: z.string(),                             // 繪師名稱
-            status: z.enum(["commissioned", "wishlist"]), // 已委託 / 想委託
-            avatar: image(),                              // 代表圖片
-            tags: z.array(z.string()).optional(),         // 類型標籤
+            name: z.string(),
+            status: z.enum(["commissioned", "wishlist"]),
+            avatar: image(),
+            priority: z.enum(["S", "A", "B", "C"]).optional(),
+            order: z.number().optional(),
+            tags: z.array(z.string()).optional(),
             links: z
                 .object({
                     twitter: z.string().url().optional(),
                     pixiv: z.string().url().optional(),
-                    website: z.string().url().optional(),
                     skeb: z.string().url().optional(),
+                    website: z.string().url().optional(),
                 })
                 .optional(),
             imageLink: z.string().url().optional(),
-
-            priority: z.enum(["S", "A", "B", "C"]).optional(),
-            order: z.number().optional(),
-
         }),
 });
 

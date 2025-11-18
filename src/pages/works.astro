@@ -1,81 +1,95 @@
 ---
 import { getCollection } from "astro:content";
 
-// ★ 定義優先度權重
-const priorityRank = { S: 0, A: 1, B: 2, C: 3 };
-
-// ★ 取得全部 illustrators，並排序後存在 illustrators 變數裡
+// 取得全部 list
 const illustratorsRaw = await getCollection("illustrators");
 
-const illustrators = illustratorsRaw
-  .slice()
-  .sort((a, b) => {
-    // ① 先比 priority（S → A → B → C）
-    const pa = priorityRank[a.data.priority ?? "C"];
-    const pb = priorityRank[b.data.priority ?? "C"];
-    if (pa !== pb) return pa - pb;
+// S = 想要委託
+const wishlist = illustratorsRaw
+  .filter((x) => x.data.priority === "S")
+  .sort((a, b) => (a.data.order ?? 9999) - (b.data.order ?? 9999));
 
-    // ② 再比 order（越小越前）
-    const oa = a.data.order ?? 9999;
-    const ob = b.data.order ?? 9999;
-    if (oa !== ob) return oa - ob;
-
-    // ③ 最後用 name 排序，避免順序亂跳
-    return a.data.name.localeCompare(b.data.name, "zh-Hant");
-  });
+// A = 已委託
+const commissioned = illustratorsRaw
+  .filter((x) => x.data.priority === "A")
+  .sort((a, b) => (a.data.order ?? 9999) - (b.data.order ?? 9999));
 ---
-
 <html lang="zh-Hant">
-  <head>
-  　<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet">
-    <meta charset="utf-8" />
-    <title>繪師收藏</title>
-  </head>
-  <body>
-    <main>
-      <h1>Phantom錢都跑去哪的委託情報</h1>
-      <p>這裡會顯示我委託過與想委託的繪師。</p>
+<head>
+  <meta charset="utf-8" />
+  <title>繪師收藏</title>
 
-      <section class="gallery">
-        {illustrators.map((item) => (
-          <a href={`./${item.slug}/`} class="card">
-            <picture>
-              <img src={item.data.avatar.src} alt={item.data.name} loading="lazy" />
-            </picture>
-            <div class="info">
-              <h2>{item.data.name}</h2>
-              <p class="status">
-                {item.data.status === "commissioned" ? "已委託" : "想委託"}
-              </p>
-              {item.data.tags && (
-                <ul class="tags">
-                  {item.data.tags.map((tag) => (
-                    <li>{tag}</li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          </a>
-        ))}
-      </section>
-    </main>
+  <!-- 字體：Noto Sans JP -->
+  <link
+    href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;600;700&display=swap"
+    rel="stylesheet"
+  />
 
-    <style>
+  <style>
       body {
+        font-family: "Noto Sans JP", sans-serif;
         background: #f6f7f9;
       }
+
       main {
         max-width: 1200px;
         margin: 0 auto;
         padding: 2rem 1rem 4rem;
-        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-          "Noto Sans TC", sans-serif;
-        h1 {
-          font-family: "Noto Sans JP", sans-serif;
-        }
       }
-      
-      /* --- Masonry layout --- */
+
+      h1 {
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+      }
+
+      p {
+        margin-bottom: 1.5rem;
+        font-size: 1rem;
+      }
+
+      h2.section-title {
+        margin: 3rem 0 0.75rem;
+        font-size: 1.5rem;
+        font-weight: 700;
+      }
+
+      /* 開關按鈕 */
+      .toggle-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        margin-bottom: 1rem;
+        padding: 0.35rem 0.9rem;
+        background: #0096fa;
+        color: white;
+        border-radius: 0.45rem;
+        text-decoration: none;
+        cursor: pointer;
+        font-size: 0.9rem;
+        font-weight: 600;
+        border: none;
+      }
+
+      /* 折疊動畫 */
+      .collapsible {
+        max-height: 2000px;
+        overflow: hidden;
+        opacity: 1;
+        transform: translateY(0);
+        transition:
+          max-height 0.35s ease,
+          opacity 0.25s ease,
+          transform 0.25s ease;
+      }
+
+      .collapsible.is-closed {
+        max-height: 0;
+        opacity: 0;
+        transform: translateY(-4px);
+      }
+
+      /* 圖磚牆 */
       .gallery {
         column-count: 3;
         column-gap: 1.2rem;
@@ -86,7 +100,7 @@ const illustrators = illustratorsRaw
           column-count: 4;
         }
       }
-      
+
       .card {
         display: block;
         margin-bottom: 1.2rem;
@@ -97,66 +111,145 @@ const illustrators = illustratorsRaw
         overflow: hidden;
         background: #fff;
         box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
-        transition: transform 0.15s ease, box-shadow 0.15s ease;
+        transition: 0.15s ease;
       }
-      
+
       .card:hover {
         transform: translateY(-4px);
         box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
       }
-      
-      /* --- Images (uniform thumbnails like Eagle) --- */
-      .card picture {
-        display: block;
-        width: 100%;
-        /* 不再強制 3:4，也不裁切 */
-      }
-      
+
       .card picture img {
         width: 100%;
-        height: auto;      /* 讓圖片自己維持比例 */
+        height: auto;
         display: block;
-        /* 不需要 object-fit，保持原比例就好 */
       }
 
-      
-      .card:hover picture img {
-        transform: scale(1.05);
-      }
-      
-      /* --- Info section --- */
       .info {
         padding: 0.75rem 0.75rem 1rem;
       }
-      
-      .info h2 {
+
+      .info h3 {
         margin: 0;
         font-size: 1rem;
         font-weight: 600;
       }
-      
+
       .status {
         font-size: 0.85rem;
         opacity: 0.7;
         margin: 0.25rem 0;
       }
-      
-      .tags {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.35rem;
-        margin-top: 0.3rem;
-        padding: 0;
-        list-style: none;
+  </style>
+
+  <!-- JS 折疊 + localStorage -->
+  <script is:inline>
+    function toggleSection(sectionId, btnId, storageKey, labelShow, labelHide) {
+      const section = document.getElementById(sectionId);
+      const btn = document.getElementById(btnId);
+      const isClosed = section.classList.contains("is-closed");
+
+      if (isClosed) {
+        section.classList.remove("is-closed");
+        btn.textContent = "▲ " + labelHide;
+        try { localStorage.setItem(storageKey, "open"); } catch {}
+      } else {
+        section.classList.add("is-closed");
+        btn.textContent = "▼ " + labelShow;
+        try { localStorage.setItem(storageKey, "closed"); } catch {}
       }
-      
-      .tags li {
-        font-size: 0.75rem;
-        padding: 0.15rem 0.45rem;
-        border-radius: 0.75rem;
-        border: 1px solid rgba(0, 0, 0, 0.15);
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      const states = {
+        wishlist: localStorage.getItem("section-wishlist") || "open",
+        commissioned: localStorage.getItem("section-commissioned") || "open"
+      };
+
+      function applyState(name, labelShow, labelHide) {
+        const section = document.getElementById(`${name}-section`);
+        const btn = document.getElementById(`${name}-btn`);
+        const state = states[name];
+
+        if (state === "closed") {
+          section.classList.add("is-closed");
+          btn.textContent = "▼ " + labelShow;
+        } else {
+          section.classList.remove("is-closed");
+          btn.textContent = "▲ " + labelHide;
+        }
       }
-      
-    </style>
-  </body>
+
+      applyState("wishlist", "顯示想要委託的繪師", "隱藏想要委託的繪師");
+      applyState("commissioned", "顯示已經委託過的繪師", "隱藏已經委託過的繪師");
+    });
+  </script>
+</head>
+
+<body>
+  <main>
+    <h1>Phantom 錢都跑去哪的委託情報</h1>
+    <p>
+      分成「想要委託」與「已經委託」兩區塊。<br />
+      點擊縮圖可前往圖源。
+    </p>
+
+    <!-- 🔵 S：想要委託 -->
+    <h2 class="section-title">想要委託的繪師</h2>
+
+    <button
+      id="wishlist-btn"
+      class="toggle-btn"
+      type="button"
+      onclick="toggleSection('wishlist-section','wishlist-btn','section-wishlist','顯示想要委託的繪師','隱藏想要委託的繪師')"
+    >
+      ▲ 隱藏想要委託的繪師
+    </button>
+
+    <div id="wishlist-section" class="collapsible">
+      <div class="gallery">
+        {wishlist.map((item) => (
+          <a href={`./${item.slug}/`} class="card">
+            <picture>
+              <img src={item.data.avatar.src} alt={item.data.name} loading="lazy" />
+            </picture>
+            <div class="info">
+              <h3>{item.data.name}</h3>
+              <p class="status">想委託</p>
+            </div>
+          </a>
+        ))}
+      </div>
+    </div>
+
+    <!-- 🟩 A：已經委託 -->
+    <h2 class="section-title">已經委託過的繪師</h2>
+
+    <button
+      id="commissioned-btn"
+      class="toggle-btn"
+      type="button"
+      onclick="toggleSection('commissioned-section','commissioned-btn','section-commissioned','顯示已經委託過的繪師','隱藏已經委託過的繪師')"
+    >
+      ▲ 隱藏已經委託過的繪師
+    </button>
+
+    <div id="commissioned-section" class="collapsible">
+      <div class="gallery">
+        {commissioned.map((item) => (
+          <a href={`./${item.slug}/`} class="card">
+            <picture>
+              <img src={item.data.avatar.src} alt={item.data.name} loading="lazy" />
+            </picture>
+            <div class="info">
+              <h3>{item.data.name}</h3>
+              <p class="status">已委託</p>
+            </div>
+          </a>
+        ))}
+      </div>
+    </div>
+
+  </main>
+</body>
 </html>
