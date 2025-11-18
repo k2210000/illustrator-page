@@ -1,0 +1,134 @@
+---
+import { getCollection } from "astro:content";
+import { Image } from "astro:assets";
+
+const illustrators = await getCollection("illustrators");
+---
+
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8" />
+    <title>My Works</title>
+  </head>
+  <body>
+    <main>
+      <h1>繪師收藏</h1>
+      <p>這裡會顯示我委託過與想委託的繪師。</p>
+
+      <section class="gallery">
+        {illustrators.map((item) => (
+          <a href={`/works/${item.slug}/`} class="card">
+            <picture>
+              <img src={item.data.avatar.src} alt={item.data.name} loading="lazy" />
+            </picture>
+            <div class="info">
+              <h2>{item.data.name}</h2>
+              <p class="status">
+                {item.data.status === "commissioned" ? "已委託" : "想委託"}
+              </p>
+              {item.data.tags && (
+                <ul class="tags">
+                  {item.data.tags.map((tag) => (
+                    <li>{tag}</li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </a>
+        ))}
+      </section>
+    </main>
+
+    <style>
+      main {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 2rem 1rem 4rem;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+          "Noto Sans TC", sans-serif;
+      }
+      
+      /* --- Masonry layout --- */
+      .gallery {
+        column-count: 3;
+        column-gap: 1.2rem;
+      }
+      
+      @media (min-width: 1024px) {
+        .gallery {
+          column-count: 4;
+        }
+      }
+      
+      .card {
+        display: block;
+        margin-bottom: 1.2rem;
+        break-inside: avoid;
+        text-decoration: none;
+        color: inherit;
+        border-radius: 1rem;
+        overflow: hidden;
+        background: #fff;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+      }
+      
+      .card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+      }
+      
+      /* --- Images (uniform thumbnails like Eagle) --- */
+      .card picture {
+        display: block;
+        width: 100%;
+        aspect-ratio: 3 / 4;
+        overflow: hidden;
+      }
+      
+      .card picture img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+      
+      .card:hover picture img {
+        transform: scale(1.05);
+      }
+      
+      /* --- Info section --- */
+      .info {
+        padding: 0.75rem 0.75rem 1rem;
+      }
+      
+      .info h2 {
+        margin: 0;
+        font-size: 1rem;
+        font-weight: 600;
+      }
+      
+      .status {
+        font-size: 0.85rem;
+        opacity: 0.7;
+        margin: 0.25rem 0;
+      }
+      
+      .tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.35rem;
+        margin-top: 0.3rem;
+        padding: 0;
+        list-style: none;
+      }
+      
+      .tags li {
+        font-size: 0.75rem;
+        padding: 0.15rem 0.45rem;
+        border-radius: 0.75rem;
+        border: 1px solid rgba(0, 0, 0, 0.15);
+      }
+      
+    </style>
+  </body>
+</html>

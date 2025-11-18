@@ -1,0 +1,211 @@
+---
+import { getCollection, type CollectionEntry } from "astro:content";
+
+type Illustrator = CollectionEntry<"illustrators">;
+
+export async function getStaticPaths() {
+  const illustrators = await getCollection("illustrators");
+
+  return illustrators.map((item) => ({
+    params: { slug: item.slug },
+    props: { item },
+  }));
+}
+
+const { item } = Astro.props as { item: Illustrator };
+
+// ✅ 圖片點擊要連去的網址：從 md 裡的 imageLink 來
+const linkTarget = item.data.imageLink ?? null;
+
+// ✅ 取得 md 正文（備註）用來 render
+const { Content } = await item.render();
+---
+
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8" />
+    <title>{item.data.name} - 繪師詳細</title>
+  </head>
+  <body>
+    <main>
+      <a class="back-link" href="/works">← 回到作品瀏覽</a>
+
+      <section class="detail">
+        <!-- 左：大圖（可以點） -->
+        <div class="image-wrapper">
+          {linkTarget ? (
+            <a href={linkTarget} target="_blank" rel="noopener noreferrer">
+              <picture>
+                <img src={item.data.avatar.src} alt={item.data.name} loading="lazy" />
+              </picture>
+            </a>
+          ) : (
+            <picture>
+              <img src={item.data.avatar.src} alt={item.data.name} loading="lazy" />
+            </picture>
+          )}
+        </div>
+
+        <!-- 右：資訊欄 -->
+        <div class="meta">
+          <h1 class="title">{item.data.name}</h1>
+
+          <p class="status">
+            {item.data.status === "commissioned" ? "🟢 已委託" : "🟦 想委託"}
+          </p>
+
+          {/* 標籤 */}
+          {item.data.tags && (
+            <div class="tags">
+              {item.data.tags.map((tag) => (
+                <span class="tag">{tag}</span>
+              ))}
+            </div>
+          )}
+
+          {/* 按鈕 */}
+          {item.data.links && (
+            <div class="links">
+              {item.data.links.twitter && (
+                <a class="pixiv-btn" href={item.data.links.twitter} target="_blank">Twitter</a>
+              )}
+              {item.data.links.pixiv && (
+                <a class="pixiv-btn" href={item.data.links.pixiv} target="_blank">Pixiv</a>
+              )}
+              {item.data.links.website && (
+                <a class="pixiv-btn" href={item.data.links.website} target="_blank">Website</a>
+              )}
+            </div>
+          )}
+
+          {/* 備註文字（md 正文） */}
+          <article class="description">
+            <Content />
+          </article>
+        </div>
+      </section>
+    </main>
+
+    <style>
+      /* 背景 & Layout */
+      body {
+        background: #f6f7f9;
+      }
+
+      main {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 2rem 1rem 4rem;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+          "Noto Sans TC", sans-serif;
+      }
+
+      .back-link {
+        color: #0096fa;
+        font-size: 0.95rem;
+        text-decoration: none;
+        margin-bottom: 1rem;
+        display: inline-block;
+      }
+
+      /* 詳細頁卡片 */
+      .detail {
+        display: grid;
+        grid-template-columns: 2fr 1.3fr;
+        gap: 2rem;
+        margin-top: 1.5rem;
+        background: #fff;
+        border-radius: 1rem;
+        padding: 2rem;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+      }
+
+      @media (max-width: 900px) {
+        .detail {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      /* 圖片超連結 */
+      .image-wrapper a {
+        display: block;
+        text-decoration: none;
+      }
+
+      /* 圖片區 */
+      .image-wrapper picture {
+        display: block;
+        width: 100%;
+        aspect-ratio: 3/4;
+        overflow: hidden;
+        border-radius: 1rem;
+        background: #eee;
+      }
+
+      .image-wrapper picture img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+      }
+
+      /* 標題 */
+      .meta .title {
+        font-size: 1.8rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+      }
+
+      .status {
+        font-size: 1rem;
+        color: #555;
+        margin-bottom: 1rem;
+      }
+
+      .tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-bottom: 1.2rem;
+      }
+
+      .tag {
+        background: #eef6ff;
+        border: 1px solid #cfe5ff;
+        padding: 0.2rem 0.6rem;
+        border-radius: 0.5rem;
+        font-size: 0.85rem;
+        color: #1877ff;
+      }
+
+      /* 按鈕 */
+      .links {
+        display: flex;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+      }
+
+      .pixiv-btn {
+        background: #0096fa;
+        color: white;
+        padding: 0.45rem 1rem;
+        border-radius: 0.5rem;
+        text-decoration: none;
+        font-size: 0.9rem;
+        font-weight: 500;
+      }
+
+      .pixiv-btn:hover {
+        background: #007cdc;
+      }
+
+      /* 備註（md 正文） */
+      .description {
+        margin-top: 1rem;
+        line-height: 1.6;
+        color: #444;
+        font-size: 0.95rem;
+      }
+    </style>
+  </body>
+</html>
