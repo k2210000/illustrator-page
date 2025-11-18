@@ -17,7 +17,7 @@ const illustrators = await getCollection("illustrators");
 
       <section class="gallery">
         {illustrators.map((item) => (
-          <a href={`/works/${item.slug}/`} class="card">
+          <a href={`./${item.slug}/`} class="card">
             <picture>
               <img src={item.data.avatar.src} alt={item.data.name} loading="lazy" />
             </picture>
